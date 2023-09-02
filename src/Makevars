@@ -1,0 +1,11 @@
+TSKIT_INCLUDE = -I./tskit -I./tskit/tskit -I ./tskit/subprojects/kastore
+TSKIT_LIB = ./tskit/libtskit.a
+
+PKG_CFLAGS = -O3 -std=c99 -Wall -pedantic -UNDEBUG
+PKG_CPPFLAGS = $(TSKIT_INCLUDE)
+PKG_LIBS = $(TSKIT_LIB) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
+$(SHLIB): libtskit.a
+
+libtskit.a:
+	@(cd tskit && $(MAKE) libtskit.a)

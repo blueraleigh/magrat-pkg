@@ -1,0 +1,12 @@
+Package: magrat
+Type: Package
+Title: Minimum dispersal histories on ancestral recombination graphs
+Version: 1.0
+Date: 2021-10-29
+Author: Michael C. Grundler
+Maintainer: Michael C. Grundler <mcgrundler@gmail.com>
+Description: The magrat package performs generalized parsimony analysis on the
+  marginal gene genealogies embedded within an ancestral recombination graph
+  (ARG) to infer the geographic locations of genetic ancestors.
+NeedsCompilation: yes
+License: CC0
