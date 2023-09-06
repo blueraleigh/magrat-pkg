@@ -26,7 +26,7 @@ treeseq_sankoff_island_mpr = function(ts, sample_locations, cost,
         C_treeseq_sankoff_island_mpr
         , ts@treeseq
         , as.integer(use_brlen)
-        , num_states,
+        , num_states
         , G
         , cost
     )
