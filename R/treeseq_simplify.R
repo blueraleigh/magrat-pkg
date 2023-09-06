@@ -1,4 +1,4 @@
-tsx_treeseq_simplify = function(ts, samples, node.map=FALSE)
+treeseq_simplify = function(ts, samples, node.map=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
     storage.mode(samples) = "integer"
