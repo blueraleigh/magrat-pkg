@@ -32,6 +32,7 @@ typedef struct pdata {
 
 typedef struct mpr_summary {
     double *F;
+    double *G;
     double *node_weight;
     double *tree_length;
     double mean_tree_length;
@@ -178,12 +179,16 @@ update_mean_costs(tsx_tree_t *tree, int t_index, double t_left, double t_right,
     double total_weight = mpr_summary->node_weight[node_id];
 
     const double *restrict f = pdata->f + n * node_id;
+    const double *restrict g = pdata->g + n * node_id;
     double *restrict F = mpr_summary->F + n * node_id;
+    double *restrict G = mpr_summary->G + n * node_id;
 
     for (i = 0; i < n; ++i)
     {
         if (R_FINITE(F[i]))
             F[i] += w * (f[i] - F[i]) / total_weight;
+        if (R_FINITE(G[i]))
+            G[i] += w * (g[i] - G[i]) / total_weight;
     }
 }
 
@@ -209,18 +214,21 @@ SEXP C_treeseq_sankoff_island_mpr(
     SEXP f = PROTECT(Rf_allocMatrix(REALSXP, n, num_nodes));
 
     SEXP F = PROTECT(Rf_allocMatrix(REALSXP, n, num_nodes));
+    SEXP G = PROTECT(Rf_allocMatrix(REALSXP, n, num_nodes));
     SEXP node_weight = PROTECT(Rf_allocVector(REALSXP, num_nodes));
     SEXP tree_length = PROTECT(Rf_allocVector(REALSXP, num_trees));
 
-    nprotect = 5;
+    nprotect = 6;
 
     memset(REAL(h), 0, n * num_nodes * sizeof(double));
     memset(REAL(f), 0, n * num_nodes * sizeof(double));
     memset(REAL(F), 0, n * num_nodes * sizeof(double));
     memset(REAL(node_weight), 0, num_nodes * sizeof(double));
     memset(REAL(tree_length), 0, num_trees * sizeof(double));
+    memcpy(REAL(G), REAL(g), n * num_nodes * sizeof(double));
 
     mpr_summary.F = REAL(F);
+    mpr_summary.G = REAL(G);
     mpr_summary.node_weight = REAL(node_weight);
 
     mpr_summary.tree_weight = 0;
@@ -255,6 +263,6 @@ SEXP C_treeseq_sankoff_island_mpr(
 out:
     tsx_tree_free(&tree);
     UNPROTECT(nprotect);
-    return Rf_list3(
-        Rf_ScalarReal(mpr_summary.mean_tree_length), tree_length, F);
+    return Rf_list4(
+        Rf_ScalarReal(mpr_summary.mean_tree_length), tree_length, G, F);
 }

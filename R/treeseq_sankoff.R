@@ -15,25 +15,17 @@ treeseq_sankoff_island_mpr = function(ts, sample_locations, cost,
     N = nrow(treeseq_nodes(ts))
     G = matrix(0, num_states, N)
     sample_ids = sample_locations[, "node_id"] + 1L
-    for (i in 1:nrow(sample_locations))
-    {
-        k = sample_ids[i]
-        j = sample_locations[i, "state_id"]
-        G[, k] = Inf
-        G[j, k] = 0
-    }
-    L = .Call(
+    state_ids = sample_locations[, "state_id"]
+    G[, sample_ids] = Inf
+    G[cbind(state_ids, sample_ids)] = 0
+    structure(.Call(
         C_treeseq_sankoff_island_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , num_states
         , G
         , cost
-    )
-    names(L) = c("mean_tree_length", "tree_length", "mpr")
-    L[[3]] = t(L[[3]][, -sample_ids])
-    rownames(L[[3]]) = (0:(N-1))[-sample_ids]
-    L
+    ), names=c("mean_tree_length", "tree_length", "G", "F"))
 }
 
 
