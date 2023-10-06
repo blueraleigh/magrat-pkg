@@ -1,5 +1,6 @@
 #include <R.h>
 #include <Rinternals.h>
+#include <Rmath.h>
 #include <assert.h>
 #include <tskit.h>
 
@@ -265,4 +266,251 @@ out:
     UNPROTECT(nprotect);
     return Rf_list4(
         Rf_ScalarReal(mpr_summary.mean_tree_length), tree_length, G, F);
+}
+
+
+#define SQRT_DBL_EPSILON 1.490116119384765696e-8
+
+// test for a == b
+static int
+fequals(double a, double b)
+{
+    // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+    double diff = fabs(a - b);
+    if (diff <= SQRT_DBL_EPSILON)
+    {
+        return 1;
+    }
+    a = fabs(a);
+    b = fabs(b);
+    double M = (b > a) ? b : a;
+    return (diff <= M * SQRT_DBL_EPSILON) ? 1 : 0;
+}
+
+
+// the following routines are only suitable for undirected (=symmetric) 
+// state graphs
+
+typedef struct state_graph {
+    int num_states;
+    // shortest path distances between all pairs of states
+    double *distances;
+    // adjacency matrix in compressed sparse column format
+    int *i;          // row index of each non-zero weight
+    int *p;          // p[j] gives the index of the weight that begins column j
+    double *weights; // non-zero weights
+} state_graph_t;
+
+
+// sample the previous state on a shortest path from source_state to
+// target_state given the current_state, which is initially set to
+// the target_state
+static int
+prev_state(int current_state, int source_state, int target_state, 
+    state_graph_t *g)
+{
+    int i;
+    int k;
+    int s;
+    double d;
+    double D;
+    
+    int num_states = g->num_states;
+
+    // neighbors of the current state and their edge weights
+    int num_neighbors = g->p[current_state+1] - g->p[current_state];
+    const int *restrict neighbors = g->i + g->p[current_state];
+    const double *restrict weights = g->weights + g->p[current_state];
+
+    const double *restrict distances = g->distances;
+
+    k = 0;
+
+    // shortest graph distance from source state to current state
+    D = distances[source_state + current_state*num_states];
+
+    for (i = 0; i < num_neighbors; ++i)
+    {
+        // shortest graph distance from source state to
+        // current state that goes through this neighbor
+        d = distances[source_state + neighbors[i]*num_states] + weights[i];
+        if (fequals(d, D))
+        {
+            ++k;
+            if (unif_rand() < (1 / (double)k))
+            {
+                s = neighbors[i];
+            }
+        }
+    }
+    return s;
+}
+
+
+// Samples a shortest path from source to target in reverse iteration
+// order. That is, to iterate from source to target use the following
+// idiom:
+//   
+//   sample_path(source, target, ..., &path_len, path);
+//
+//   for (i = path_len - 1; i >= 0; --i)
+//   {
+//        state = path[i];
+//   }
+//
+static void
+sample_path(int source_state, int target_state, state_graph_t *g,
+    int *ret_path_length, int *ret_path)
+{
+    int path_length = 0;
+    int current_state = target_state;
+    ret_path[path_length++] = current_state;
+    while (current_state != source_state)
+    {
+        current_state = prev_state(
+            current_state, source_state, target_state, g);
+        ret_path[path_length++] = current_state;
+    }
+    *ret_path_length = path_length;
+}
+
+
+static void
+summarize_path(int path_length, int *path, double weight, int num_states,
+    double *summary_counts)
+{
+    int i;
+    int j;
+    int k;
+    assert (path_length > 0);
+    k = path_length - 1;
+    i = path[k--];
+    for (; k >= 0; --k)
+    {
+        j = path[k];
+        summary_counts[i + j*num_states] += weight;
+        i = j;
+    }
+}
+
+
+static void
+tsx_sankoff_island_sample(
+    tsk_treeseq_t *ts,
+    int num_samples,
+    int num_nodes,
+    double time_start,
+    double time_end,
+    const int *restrict node_states,
+    state_graph_t *state_graph,
+    double *ret_summary_counts)
+{
+    tsk_size_t i;
+    int j;
+    tsk_id_t u;
+    tsk_id_t v;
+    int to;
+    int from;
+    int path_length;
+    int num_states = state_graph->num_states;
+    int *path = malloc(num_states*sizeof(*path));
+    if (!path)
+    {
+        TSX_WARN("memory allocation failure");
+        goto out;
+    }
+
+    tsk_size_t num_edges = ts->tables->edges.num_rows;
+    const tsk_id_t *restrict parent = ts->tables->edges.parent;
+    const tsk_id_t *restrict child = ts->tables->edges.child;
+
+    double branch_start;
+    double branch_end;
+    double branch_fraction;
+    double weight;
+
+    const double *restrict time = ts->tables->nodes.time;
+
+    for (i = 0; i < num_edges; ++i)
+    {
+        u = parent[i];
+        v = child[i];
+        branch_start = time[v];
+        branch_end = time[u];
+        if (
+            // +--e-------s--+
+            (branch_end >= time_end && branch_start <= time_start)
+            
+            // +--e-------+--s
+            || (branch_end >= time_end 
+                && (branch_start >= time_start
+                    && branch_start <= time_end))
+            
+            // e--+-------+--s
+            || (branch_end <= time_end && branch_start >= time_start)
+
+            // e--+-------s--+
+            || ((branch_end <= time_end && branch_end >= time_start) 
+                && branch_start <= time_start))
+        {
+            branch_fraction = (fmin2(time_end, branch_end) - 
+                fmax2(time_start, branch_start)) / (branch_end - branch_start);
+            weight = branch_fraction / (double)num_samples;
+            for (j = 0; j < num_samples; ++j)
+            {
+                from = node_states[j + u*num_samples]; 
+                to = node_states[j + v*num_samples];
+                sample_path(from, to, state_graph, &path_length, path);
+                summarize_path(path_length, path, weight, num_states, 
+                    ret_summary_counts);
+            }
+        }
+    }
+out:
+    free(path);
+}
+
+
+SEXP C_treeseq_sankoff_island_mpr_sample(
+    SEXP treeseq,
+    SEXP node_states,
+    SEXP time_start,
+    SEXP time_end,
+    SEXP cost,
+    SEXP A)
+{
+    state_graph_t graph;
+    
+    int num_samples = INTEGER(Rf_getAttrib(node_states, R_DimSymbol))[0];
+    int num_nodes = INTEGER(Rf_getAttrib(node_states, R_DimSymbol))[1];
+    int num_states = *INTEGER(Rf_getAttrib(cost, R_DimSymbol));
+
+    graph.num_states = num_states;
+    graph.distances = REAL(cost);
+    graph.i = INTEGER(R_do_slot(A, Rf_mkString("i")));
+    graph.p = INTEGER(R_do_slot(A, Rf_mkString("p")));
+    graph.weights = REAL(R_do_slot(A, Rf_mkString("x")));
+
+    tsk_treeseq_t *ts = (tsk_treeseq_t *)R_ExternalPtrAddr(treeseq);
+
+    SEXP ret = PROTECT(Rf_allocMatrix(REALSXP, num_states, num_states));
+
+    double *summary_counts = REAL(ret);
+    memset(summary_counts, 0, num_states*num_states*sizeof(double));
+
+    GetRNGstate();
+    tsx_sankoff_island_sample(
+        ts,
+        num_samples,
+        num_nodes,
+        *REAL(time_start),
+        *REAL(time_end),
+        INTEGER(node_states),
+        &graph,
+        summary_counts
+    );
+    PutRNGstate();
+    
+    UNPROTECT(1);
+    return ret;
 }

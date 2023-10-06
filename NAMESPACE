@@ -1,2 +1,4 @@
 useDynLib(magrat, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
+
+importFrom(Matrix, Matrix)

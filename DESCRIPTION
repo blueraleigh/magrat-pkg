@@ -9,4 +9,5 @@ Description: The magrat package performs generalized parsimony analysis on the
   marginal gene genealogies embedded within an ancestral recombination graph
   (ARG) to infer the geographic locations of genetic ancestors.
 NeedsCompilation: yes
+Imports: Matrix
 License: CC0

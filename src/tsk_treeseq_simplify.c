@@ -22,8 +22,7 @@ C_treeseq_simplify(SEXP treeseq, SEXP sample_ids)
     const tsk_id_t *samples = (tsk_id_t *)INTEGER(sample_ids);
     tsk_flags_t options = TSK_SIMPLIFY_FILTER_SITES |
                           TSK_SIMPLIFY_FILTER_POPULATIONS |
-                          TSK_SIMPLIFY_FILTER_INDIVIDUALS |
-                          TSK_SIMPLIFY_REDUCE_TO_SITE_TOPOLOGY;
+                          TSK_SIMPLIFY_FILTER_INDIVIDUALS;
     tsk_treeseq_t *tss = malloc(sizeof(*tss));
     tsk_tree_t *tree = malloc(sizeof(*tree));
     tsk_id_t *node_map = malloc(N*sizeof(tsk_id_t));
