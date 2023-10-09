@@ -275,6 +275,7 @@ out:
 static int
 fequals(double a, double b)
 {
+    if (!R_FINITE(a) || !R_FINITE(b)) return 0;
     // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
     double diff = fabs(a - b);
     if (diff <= SQRT_DBL_EPSILON)

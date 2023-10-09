@@ -192,3 +192,31 @@ treeseq_sankoff_lattice_mpr = function(
     rownames(L[[3]]) = rownames(L[[4]]) = (0:(N-1))[-sample_ids]
     L
 }
+
+
+treeseq_sankoff_wagner_mpr = function(ts, sample_locations,
+    use_brlen=FALSE)
+{
+    stopifnot(inherits(ts, "treeseq"))
+    stopifnot(is.matrix(sample_locations))
+    stopifnot(!is.null(colnames(sample_locations)))
+    stopifnot(all(colnames(sample_locations) %in% c("node_id","x", "y")))
+    storage.mode(sample_locations) = "double"
+    N = nrow(treeseq_nodes(ts))
+    num_samples = nrow(sample_locations)
+    x = numeric(N)
+    y = numeric(N)
+    sample_ids = sample_locations[, "node_id"] + 1L
+    x[sample_ids] = sample_locations[,"x"]
+    y[sample_ids] = sample_locations[,"y"]
+    L = .Call(
+        C_treeseq_sankoff_wagner_mpr
+        , ts@treeseq
+        , as.integer(use_brlen)
+        , x
+        , y
+    )
+    names(L) = c("mean_tree_length", "tree_length", "mpr_x", "mpr_y")
+    L
+}
+

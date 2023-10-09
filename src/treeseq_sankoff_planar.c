@@ -166,14 +166,17 @@ mean_tree_length(
     double p1, p2, p3, p4, p5, min_s, len = 0;
     for (u = left_child[virtual_root]; u != TSK_NULL; u = right_sib[u])
     {
-        g = pdata->g + u*5;
-        p1 = g[0];
-        p2 = g[1];
-        p3 = g[2];
-        p4 = g[3];
-        p5 = g[4];
-        min_s = p5 - (p3*p3)/(4*p1) - (p4*p4)/(4*p2);
-        len += min_s;
+        if (!(tree->node_flags[u] & TSK_NODE_IS_SAMPLE))
+        {
+            g = pdata->g + u*5;
+            p1 = g[0];
+            p2 = g[1];
+            p3 = g[2];
+            p4 = g[3];
+            p5 = g[4];
+            min_s = p5 - (p3*p3)/(4*p1) - (p4*p4)/(4*p2);
+            len += min_s;
+        }
     }
     len /= tree->num_edges;
 
