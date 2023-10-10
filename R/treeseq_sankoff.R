@@ -102,7 +102,7 @@ treeseq_sankoff_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     )
 }
 
-treeseq_sankoff_planar_mpr = function(ts, sample_locations,
+treeseq_sankoff_quadratic_mpr = function(ts, sample_locations,
     use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -118,7 +118,7 @@ treeseq_sankoff_planar_mpr = function(ts, sample_locations,
     x[sample_ids] = sample_locations[,"x"]
     y[sample_ids] = sample_locations[,"y"]
     L = .Call(
-        C_treeseq_sankoff_planar_mpr
+        C_treeseq_sankoff_quadratic_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , x
@@ -194,7 +194,7 @@ treeseq_sankoff_lattice_mpr = function(
 }
 
 
-treeseq_sankoff_wagner_mpr = function(ts, sample_locations,
+treeseq_sankoff_linear_mpr = function(ts, sample_locations,
     use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -210,7 +210,7 @@ treeseq_sankoff_wagner_mpr = function(ts, sample_locations,
     x[sample_ids] = sample_locations[,"x"]
     y[sample_ids] = sample_locations[,"y"]
     L = .Call(
-        C_treeseq_sankoff_wagner_mpr
+        C_treeseq_sankoff_linear_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , x

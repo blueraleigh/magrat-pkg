@@ -6,6 +6,34 @@
 #include "treeseq_sankoff.h"
 #include "error.h"
 
+/* Sample MPR histories of geographic locations of genetic ancestors
+** using linear parsimony.
+**
+** For each non-sample node we calculate the parameters of a convex
+** piecewise linear function 
+
+
+       { s[0] + a[0] * x                 if x <= x[1]
+       { s[1] + a[1] * (x - x[1])        if x[1] < x <= x[2] 
+F(x) = { ...
+       { s[k-1] + a[k-1] * (x - x[k-1])  if x[k-1] < x <= x[k]
+       { s[k]   + a[k]   * (x - x[k])    if x > x[k]
+
+where s[i+1] = s[i] + a[i]*(x[i+1] - x[i])
+
+** Which gives the minimum sum of distances between all
+** ancestor-descendant pairs needed to explain the spatial
+** distribution of samples assuming the non-sample node is in
+** location x.
+**
+** For more information on the basic algorithm for a single tree see
+**
+**  Miklós Csurös. 2008. Ancestral Reconstruction by Asymmetric Wagner
+**  Parsimony over Continuous Characters and Squared Parsimony over
+**  Distributions. Pp 72-86. In: Nelson, C.E., Vialette, S. (eds)
+**  Comparative Genomics.
+*/
+
 #define SQRT_DBL_EPSILON 1.490116119384765696e-8
 
 // test for a == b
@@ -477,7 +505,7 @@ update_mean_costs(tsx_tree_t *tree, int t_index, double t_left, double t_right,
 }
 
 
-SEXP C_treeseq_sankoff_wagner_mpr(
+SEXP C_treeseq_sankoff_linear_mpr(
     SEXP treeseq,
     SEXP use_brlen, 
     SEXP x,
