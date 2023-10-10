@@ -1,4 +1,4 @@
-treeseq_sankoff_island_mpr = function(ts, sample_locations, cost, 
+treeseq_island_mpr = function(ts, sample_locations, cost, 
     use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -20,7 +20,7 @@ treeseq_sankoff_island_mpr = function(ts, sample_locations, cost,
     G[, sample_ids] = Inf
     G[cbind(state_ids, sample_ids)] = 0
     structure(.Call(
-        C_treeseq_sankoff_island_mpr
+        C_treeseq_island_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , num_states
@@ -30,7 +30,7 @@ treeseq_sankoff_island_mpr = function(ts, sample_locations, cost,
 }
 
 if(FALSE){
-treeseq_sankoff_island_mpr_sample = function(ts, edges, G, F,
+treeseq_island_mpr_sample = function(ts, edges, G, F,
     cost, adjacency_matrix, num_samples=1L, use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -45,7 +45,7 @@ treeseq_sankoff_island_mpr_sample = function(ts, edges, G, F,
     A = methods::as(adjacency_matrix, "sparseMatrix")
     stopifnot(inherits(A, "dgCMatrix"))
     .Call(
-        C_treeseq_sankoff_island_mpr_sample
+        C_treeseq_island_mpr_sample
         , ts@treeseq
         , as.integer(use_brlen)
         , as.integer(num_samples)
@@ -59,7 +59,7 @@ treeseq_sankoff_island_mpr_sample = function(ts, edges, G, F,
 }
 }
 
-treeseq_sankoff_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
+treeseq_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     num_samples=1L, time_start=0, time_end=Inf)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -92,7 +92,7 @@ treeseq_sankoff_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
         node_states = t(node_states)
 
     .Call(
-        C_treeseq_sankoff_island_mpr_sample
+        C_treeseq_island_mpr_sample
         , ts@treeseq
         , node_states
         , time_start
@@ -102,7 +102,7 @@ treeseq_sankoff_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     )
 }
 
-treeseq_sankoff_quadratic_mpr = function(ts, sample_locations,
+treeseq_quadratic_mpr = function(ts, sample_locations,
     use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -118,7 +118,7 @@ treeseq_sankoff_quadratic_mpr = function(ts, sample_locations,
     x[sample_ids] = sample_locations[,"x"]
     y[sample_ids] = sample_locations[,"y"]
     L = .Call(
-        C_treeseq_sankoff_quadratic_mpr
+        C_treeseq_quadratic_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , x
@@ -131,7 +131,7 @@ treeseq_sankoff_quadratic_mpr = function(ts, sample_locations,
 }
 
 
-treeseq_sankoff_lattice_mpr = function(
+treeseq_lattice_mpr = function(
     ts,
     num_states_x,
     num_states_y,
@@ -176,7 +176,7 @@ treeseq_sankoff_lattice_mpr = function(
     storage.mode(periodic_x) = "integer"
     storage.mode(periodic_y) = "integer"
     L = .Call(
-        C_treeseq_sankoff_lattice_mpr
+        C_treeseq_lattice_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , num_states_x
@@ -194,7 +194,7 @@ treeseq_sankoff_lattice_mpr = function(
 }
 
 
-treeseq_sankoff_linear_mpr = function(ts, sample_locations,
+treeseq_linear_mpr = function(ts, sample_locations,
     use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -210,7 +210,7 @@ treeseq_sankoff_linear_mpr = function(ts, sample_locations,
     x[sample_ids] = sample_locations[,"x"]
     y[sample_ids] = sample_locations[,"y"]
     L = .Call(
-        C_treeseq_sankoff_linear_mpr
+        C_treeseq_linear_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , x

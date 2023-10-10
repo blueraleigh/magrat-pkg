@@ -27,11 +27,11 @@ SEXP C_treeseq_edges(SEXP);
 SEXP C_treeseq_individuals(SEXP);
 SEXP C_treeseq_intervals(SEXP);
 
-SEXP C_treeseq_sankoff_lattice_mpr(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
-SEXP C_treeseq_sankoff_island_mpr(SEXP,SEXP,SEXP,SEXP,SEXP);
-SEXP C_treeseq_sankoff_island_mpr_sample(SEXP,SEXP,SEXP,SEXP,SEXP);
-SEXP C_treeseq_sankoff_quadratic_mpr(SEXP,SEXP,SEXP,SEXP);
-SEXP C_treeseq_sankoff_linear_mpr(SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_lattice_mpr(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_island_mpr(SEXP,SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_island_mpr_sample(SEXP,SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_quadratic_mpr(SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_linear_mpr(SEXP,SEXP,SEXP,SEXP);
 
 SEXP C_treeseq_tmrca(SEXP);
 
@@ -45,11 +45,11 @@ static const R_CallMethodDef CallEntries[] = {
     CALLDEF(C_treeseq_individuals, 1),
     CALLDEF(C_treeseq_intervals, 1),
 
-    CALLDEF(C_treeseq_sankoff_lattice_mpr, 8),
-    CALLDEF(C_treeseq_sankoff_island_mpr, 5),
-    CALLDEF(C_treeseq_sankoff_island_mpr_sample, 5),
-    CALLDEF(C_treeseq_sankoff_quadratic_mpr, 4),
-    CALLDEF(C_treeseq_sankoff_linear_mpr, 4),
+    CALLDEF(C_treeseq_lattice_mpr, 8),
+    CALLDEF(C_treeseq_island_mpr, 5),
+    CALLDEF(C_treeseq_island_mpr_sample, 5),
+    CALLDEF(C_treeseq_quadratic_mpr, 4),
+    CALLDEF(C_treeseq_linear_mpr, 4),
 
     CALLDEF(C_treeseq_tmrca, 1),
 

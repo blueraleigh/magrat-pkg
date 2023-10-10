@@ -194,7 +194,7 @@ update_mean_costs(tsx_tree_t *tree, int t_index, double t_left, double t_right,
 }
 
 
-SEXP C_treeseq_sankoff_island_mpr(
+SEXP C_treeseq_island_mpr(
     SEXP treeseq,
     SEXP use_brlen, 
     SEXP num_states,
@@ -472,7 +472,7 @@ out:
 }
 
 
-SEXP C_treeseq_sankoff_island_mpr_sample(
+SEXP C_treeseq_island_mpr_sample(
     SEXP treeseq,
     SEXP node_states,
     SEXP time_start,

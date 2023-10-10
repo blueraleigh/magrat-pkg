@@ -505,7 +505,7 @@ update_mean_costs(tsx_tree_t *tree, int t_index, double t_left, double t_right,
 }
 
 
-SEXP C_treeseq_sankoff_linear_mpr(
+SEXP C_treeseq_linear_mpr(
     SEXP treeseq,
     SEXP use_brlen, 
     SEXP x,

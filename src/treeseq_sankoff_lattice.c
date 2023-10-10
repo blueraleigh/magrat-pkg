@@ -355,7 +355,7 @@ update_mean_costs(tsx_tree_t *tree, int t_index, double t_left, double t_right,
 }
 
 
-SEXP C_treeseq_sankoff_lattice_mpr(
+SEXP C_treeseq_lattice_mpr(
     SEXP treeseq,
     SEXP use_brlen, 
     SEXP num_states_x,
