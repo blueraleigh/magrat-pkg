@@ -2,7 +2,7 @@ Package: magrat
 Type: Package
 Title: Minimum migration histories on ancestral recombination graphs
 Version: 1.0
-Date: 2021-10-29
+Date: 2023-10-10
 Author: Michael C. Grundler
 Maintainer: Michael C. Grundler <mcgrundler@gmail.com>
 Description: The magrat package performs generalized parsimony analysis on the
@@ -10,4 +10,4 @@ Description: The magrat package performs generalized parsimony analysis on the
   (ARG) to infer the geographic locations of genetic ancestors.
 NeedsCompilation: yes
 Imports: Matrix
-License: MIT
+License: MIT + file LICENSE
