@@ -29,35 +29,6 @@ treeseq_island_mpr = function(ts, sample_locations, cost,
     ), names=c("mean_tree_length", "tree_length", "G", "F"))
 }
 
-if(FALSE){
-treeseq_island_mpr_sample = function(ts, edges, G, F,
-    cost, adjacency_matrix, num_samples=1L, use_brlen=FALSE)
-{
-    stopifnot(inherits(ts, "treeseq"))
-    stopifnot(is.matrix(cost))
-    stopifnot(is.matrix(adjacency_matrix))
-    stopifnot(nrow(cost) == ncol(cost))
-    stopifnot(all(cost >= 0L))
-    stopifnot(all(rowSums(adjacency_matrix) > 0))
-    stopifnot(all(colSums(adjacency_matrix) > 0))
-    storage.mode(cost) = "double"
-    storage.mode(adjacency_matrix) = "double"
-    A = methods::as(adjacency_matrix, "sparseMatrix")
-    stopifnot(inherits(A, "dgCMatrix"))
-    .Call(
-        C_treeseq_island_mpr_sample
-        , ts@treeseq
-        , as.integer(use_brlen)
-        , as.integer(num_samples)
-        , edges[, 1L]
-        , edges[, 2L]
-        , G
-        , F
-        , cost
-        , A
-    )
-}
-}
 
 treeseq_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     num_samples=1L, time_start=0, time_end=Inf)
@@ -102,8 +73,7 @@ treeseq_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     )
 }
 
-treeseq_quadratic_mpr = function(ts, sample_locations,
-    use_brlen=FALSE)
+treeseq_quadratic_mpr = function(ts, sample_locations, use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
     stopifnot(is.matrix(sample_locations))
@@ -194,8 +164,7 @@ treeseq_lattice_mpr = function(
 }
 
 
-treeseq_linear_mpr = function(ts, sample_locations,
-    use_brlen=FALSE)
+treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
     stopifnot(is.matrix(sample_locations))
