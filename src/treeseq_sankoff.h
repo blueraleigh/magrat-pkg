@@ -1,3 +1,6 @@
+#ifndef TSX_SANKOFF_H
+#define TSX_SANKOFF_H
+
 #include <tskit.h>
 
 typedef struct tsx_tree_t {
@@ -41,3 +44,5 @@ tsx_treeseq_sankoff(
     void *node_params,
     void (*NODE_FUN)(tsx_tree_t *, int, double, double, tsk_id_t, void *)
 );
+
+#endif

@@ -5,6 +5,7 @@
 
 #include "treeseq_sankoff.h"
 #include "error.h"
+#include "fequals.h"
 
 /* Sample MPR histories of geographic locations of genetic ancestors
 ** using linear parsimony.
@@ -34,24 +35,6 @@ where s[i+1] = s[i] + a[i]*(x[i+1] - x[i])
 **  Comparative Genomics.
 */
 
-#define SQRT_DBL_EPSILON 1.490116119384765696e-8
-
-// test for a == b
-static int
-fequals(double a, double b)
-{
-    if (!R_FINITE(a) || !R_FINITE(b)) return 0;
-    // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-    double diff = fabs(a - b);
-    if (diff <= SQRT_DBL_EPSILON)
-    {
-        return 1;
-    }
-    a = fabs(a);
-    b = fabs(b);
-    double M = (b > a) ? b : a;
-    return (diff <= M * SQRT_DBL_EPSILON) ? 1 : 0;
-}
 
 // convex piecewise linear function.
 // slopes and breakpoints are stored in non-decreasing order
