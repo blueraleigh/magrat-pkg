@@ -73,33 +73,6 @@ treeseq_island_mpr_sample = function(ts, F, cost, adjacency_matrix,
     )
 }
 
-treeseq_quadratic_mpr = function(ts, sample_locations, use_brlen=FALSE)
-{
-    stopifnot(inherits(ts, "treeseq"))
-    stopifnot(is.matrix(sample_locations))
-    stopifnot(!is.null(colnames(sample_locations)))
-    stopifnot(all(colnames(sample_locations) %in% c("node_id","x", "y")))
-    storage.mode(sample_locations) = "double"
-    N = nrow(treeseq_nodes(ts))
-    num_samples = nrow(sample_locations)
-    x = numeric(N)
-    y = numeric(N)
-    sample_ids = sample_locations[, "node_id"] + 1L
-    x[sample_ids] = sample_locations[,"x"]
-    y[sample_ids] = sample_locations[,"y"]
-    L = .Call(
-        C_treeseq_quadratic_mpr
-        , ts@treeseq
-        , as.integer(use_brlen)
-        , x
-        , y
-    )
-    names(L) = c("mean_tree_length", "tree_length", "mpr")
-    L[[3]] = t(L[[3]][, -sample_ids])
-    rownames(L[[3]]) = (0:(N-1))[-sample_ids]
-    L
-}
-
 
 treeseq_lattice_mpr = function(
     ts,
@@ -164,6 +137,60 @@ treeseq_lattice_mpr = function(
 }
 
 
+treeseq_quadratic_mpr = function(ts, sample_locations, use_brlen=FALSE)
+{
+    stopifnot(inherits(ts, "treeseq"))
+    stopifnot(is.matrix(sample_locations))
+    stopifnot(!is.null(colnames(sample_locations)))
+    stopifnot(all(colnames(sample_locations) %in% c("node_id","x", "y")))
+    storage.mode(sample_locations) = "double"
+    N = nrow(treeseq_nodes(ts))
+    num_samples = nrow(sample_locations)
+    x = numeric(N)
+    y = numeric(N)
+    sample_ids = sample_locations[, "node_id"] + 1L
+    x[sample_ids] = sample_locations[,"x"]
+    y[sample_ids] = sample_locations[,"y"]
+    L = .Call(
+        C_treeseq_quadratic_mpr
+        , ts@treeseq
+        , as.integer(use_brlen)
+        , x
+        , y
+    )
+    names(L) = c("mean_tree_length", "tree_length", "mpr")
+    L[[3]] = t(L[[3]][, -sample_ids])
+    rownames(L[[3]]) = (0:(N-1))[-sample_ids]
+    structure(L, class=c("quadratic", "mpr"))
+}
+
+
+treeseq_quadratic_mpr_minimize = function(obj)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    .Call(C_treeseq_quadratic_mpr_minimize, obj$mpr)
+}
+
+treeseq_quadratic_mpr_sample = function(obj, lower, upper)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    if (missing(lower) || length(lower) == 0)
+        lower = c(-Inf, -Inf)
+    else {
+        if (length(lower) == 1)
+            lower = c(lower, lower)
+    }
+    if (missing(upper) || length(upper) == 0)
+        upper = c(Inf, Inf)
+    else {
+        if (length(upper) == 1)
+            upper = c(upper, upper)
+    }
+    stopifnot(all(lower < upper))
+    .Call(C_treeseq_quadratic_mpr_sample, obj$mpr, lower, upper)
+}
+
+
 treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -186,6 +213,32 @@ treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
         , y
     )
     names(L) = c("mean_tree_length", "tree_length", "mpr_x", "mpr_y")
-    L
+    structure(L, class=c("linear", "mpr"))
 }
 
+
+treeseq_linear_mpr_minimize = function(obj)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    .Call(C_treeseq_linear_mpr_minimize, obj$mpr_x, obj$mpr_y)
+}
+
+
+treeseq_linear_mpr_sample = function(obj, lower, upper)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    if (missing(lower) || length(lower) == 0)
+        lower = c(-Inf, -Inf)
+    else {
+        if (length(lower) == 1)
+            lower = c(lower, lower)
+    }
+    if (missing(upper) || length(upper) == 0)
+        upper = c(Inf, Inf)
+    else {
+        if (length(upper) == 1)
+            upper = c(upper, upper)
+    }
+    stopifnot(all(lower < upper))
+    .Call(C_treeseq_linear_mpr_sample, obj$mpr_x, obj$mpr_y, lower, upper)
+}

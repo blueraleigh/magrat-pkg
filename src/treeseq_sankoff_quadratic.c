@@ -284,3 +284,121 @@ out:
     return Rf_list3(
         Rf_ScalarReal(mpr_summary.mean_tree_length), tree_length, F);
 }
+
+
+SEXP C_treeseq_quadratic_mpr_minimize(SEXP F)
+{
+    int i;
+    int nr = *INTEGER(Rf_getAttrib(F, R_DimSymbol));
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, nr, 2));
+    SEXP dimnames = PROTECT(Rf_allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(dimnames, 0,
+        VECTOR_ELT(Rf_getAttrib(F, R_DimNamesSymbol), 0));
+    SET_VECTOR_ELT(dimnames, 1, R_NilValue);
+    double *x = REAL(ans);
+    double *y = REAL(ans) + nr;
+    const double *restrict p = REAL(F);
+    for (i = 0; i < nr; ++i)
+    {
+        x[i] = -p[i+2*nr] / (2*p[i+0*nr]);
+        y[i] = -p[i+3*nr] / (2*p[i+1*nr]);
+    }
+    Rf_setAttrib(ans, R_DimNamesSymbol, dimnames);
+    UNPROTECT(2);
+    return ans;
+}
+
+
+SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP lo, SEXP hi)
+{
+    int i;
+    int sign;
+    int lb[2];
+    int ub[2];
+    int nr = *INTEGER(Rf_getAttrib(F, R_DimSymbol));
+
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, nr, 2));
+    SEXP dimnames = PROTECT(Rf_allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(dimnames, 0,
+        VECTOR_ELT(Rf_getAttrib(F, R_DimNamesSymbol), 0));
+    SET_VECTOR_ELT(dimnames, 1, R_NilValue);
+    
+    double *x = REAL(ans);
+    double *y = REAL(ans) + nr;
+    const double *restrict p = REAL(F);
+
+    double lower[2] = {*REAL(lo), REAL(lo)[1]};
+    double upper[2] = {*REAL(hi), REAL(hi)[1]};
+
+    double u;
+    double xp;
+    double yp;
+    double min_x;
+    double min_y;
+    double min_score;
+    double score;
+    double step;
+    GetRNGstate();
+    for (i = 0; i < nr; ++i)
+    {
+        min_x = -p[i+2*nr] / (2*p[i+0*nr]);
+        min_y = -p[i+3*nr] / (2*p[i+1*nr]);
+        min_score = p[i+4*nr] - 
+                    (p[i+2*nr]*p[i+2*nr]) / (4*p[i+0*nr]) - 
+                    (p[i+3*nr]*p[i+3*nr]) / (4*p[i+1*nr]);
+        xp = min_x;
+        yp = min_y;
+        step = 1;
+        sign = +1;
+        // we want to sample from exp(-(score - min_score)). i.e., from
+        // a rate 1 exponential distribution. starting from the minimum,
+        // search along a line until (score - min_score) ≈ 5, which is the
+        // distance that will include about 99 percent of the exponential 
+        // distribution.
+        do {
+            xp += sign*step;
+            yp += sign*step;
+            score = p[i+0*nr]*xp*xp + 
+                    p[i+1*nr]*yp*yp + 
+                    p[i+2*nr]*xp + 
+                    p[i+3*nr]*yp + 
+                    p[i+4*nr];
+            if ((score - min_score) > 5)
+            {
+                sign = -1;
+                step /= 2;
+            }
+            else if ((score - min_score) < 5)
+            {
+                sign = +1;
+                step *= 2;
+            }
+        } while (fabs((score - min_score) - 5) > 0.01);
+        // set the bounding box for rejection sampling
+        lb[0] = min_x - fabs(xp - min_x);
+        lb[0] = lower[0] > lb[0] ? lower[0] : lb[0];
+        lb[1] = min_y - fabs(yp - min_y);
+        lb[1] = lower[1] > lb[1] ? lower[1] : lb[1];
+        ub[0] = min_x + fabs(xp - min_x);
+        ub[0] = upper[0] < ub[0] ? upper[0] : ub[0];
+        ub[1] = min_y + fabs(yp - min_y);
+        ub[1] = upper[1] < ub[1] ? upper[1] : ub[1];
+        // rejection sampling
+        do {
+            u = unif_rand();
+            xp = unif_rand() * (ub[0] - lb[0]) + lb[0];
+            yp = unif_rand() * (ub[1] - lb[1]) + lb[1];
+            score = p[i+0*nr]*xp*xp + 
+                    p[i+1*nr]*yp*yp + 
+                    p[i+2*nr]*xp + 
+                    p[i+3*nr]*yp + 
+                    p[i+4*nr];
+            x[i] = xp;
+            y[i] = yp;
+        } while (u >= exp(-score + min_score));
+    }
+    PutRNGstate();
+    Rf_setAttrib(ans, R_DimNamesSymbol, dimnames);
+    UNPROTECT(2);
+    return ans;
+}
