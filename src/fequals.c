@@ -1,3 +1,6 @@
+#include <R.h>
+#include "fequals.h"
+
 #define SQRT_DBL_EPSILON 1.490116119384765696e-8
 
 // test for a == b
