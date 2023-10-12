@@ -636,17 +636,18 @@ out:
         Rf_ScalarReal(mpr_summary.mean_tree_length), tree_length, mpr_x, mpr_y);
 }
 
-
 SEXP C_treeseq_linear_mpr_minimize(SEXP Fx, SEXP Fy)
 {
     int i;
     int j;
+    int k;
     int n = Rf_length(Fx);
     SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
     double *x = REAL(ans);
     double *y = REAL(ans) + n;
     double *restrict a;
     double *restrict b;
+    GetRNGstate();
     for (i = 0; i < n; ++i)
     {
         a = REAL(VECTOR_ELT(VECTOR_ELT(Fx, i), 1));
@@ -656,6 +657,14 @@ SEXP C_treeseq_linear_mpr_minimize(SEXP Fx, SEXP Fy)
             ++j;
         } while (a[j+1] < 0);
         x[i] = b[j];
+        k = 1;
+        while (a[j+1] == 0)
+        {
+            ++k;
+            ++j;
+            if (unif_rand() < (1 / (double)k))
+                x[i] = b[j];
+        }
         a = REAL(VECTOR_ELT(VECTOR_ELT(Fy, i), 1));
         b = REAL(VECTOR_ELT(VECTOR_ELT(Fy, i), 2));
         j = 0;
@@ -663,7 +672,16 @@ SEXP C_treeseq_linear_mpr_minimize(SEXP Fx, SEXP Fy)
             ++j;
         } while (a[j+1] < 0);
         y[i] = b[j];
+        k = 1;
+        while (a[j+1] == 0)
+        {
+            ++k;
+            ++j;
+            if (unif_rand() < (1 / (double)k))
+                y[i] = b[j];
+        }
     }
+    PutRNGstate();
     UNPROTECT(1);
     return ans;
 }
