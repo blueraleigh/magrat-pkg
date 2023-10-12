@@ -492,7 +492,9 @@ SEXP C_treeseq_linear_mpr(
     SEXP treeseq,
     SEXP use_brlen, 
     SEXP x,
-    SEXP y)
+    SEXP y,
+    SEXP nx,
+    SEXP ny)
 {
     tsx_tree_t tree;
     pdata_t pdata;
@@ -502,6 +504,10 @@ SEXP C_treeseq_linear_mpr(
     int num_nodes = (int) tsk_treeseq_get_num_nodes(ts);
     int num_samples = (int) tsk_treeseq_get_num_samples(ts);
     int num_trees = (int) tsk_treeseq_get_num_trees(ts);
+
+    int num_sites_x = *INTEGER(nx);
+    int num_sites_y = *INTEGER(ny);
+    int max_num_sites = num_sites_x > num_sites_y ? num_sites_x : num_sites_y;
     
     plf_t *gx = calloc(num_nodes, sizeof(plf_t));
     plf_t *gy = calloc(num_nodes, sizeof(plf_t));
@@ -514,21 +520,21 @@ SEXP C_treeseq_linear_mpr(
 
     for (i = 0; i < num_nodes; ++i)
     {
-        if (plf_init(gx + i, num_samples)) goto out;
-        if (plf_init(gy + i, num_samples)) goto out;
-        if (plf_init(hx + i, num_samples)) goto out;
-        if (plf_init(hy + i, num_samples)) goto out;
-        if (plf_init(fx + i, num_samples)) goto out;
-        if (plf_init(fy + i, num_samples)) goto out;
-        if (plf_init(Fx + i, num_samples)) goto out;
-        if (plf_init(Fy + i, num_samples)) goto out;
+        if (plf_init(gx + i, num_sites_x)) goto out;
+        if (plf_init(gy + i, num_sites_y)) goto out;
+        if (plf_init(hx + i, num_sites_x)) goto out;
+        if (plf_init(hy + i, num_sites_y)) goto out;
+        if (plf_init(fx + i, num_sites_x)) goto out;
+        if (plf_init(fy + i, num_sites_y)) goto out;
+        if (plf_init(Fx + i, num_sites_x)) goto out;
+        if (plf_init(Fy + i, num_sites_y)) goto out;
     }
 
     plf_t tmp1;
     plf_t tmp2;
 
-    if (plf_init(&tmp1, num_samples)) goto out;
-    if (plf_init(&tmp2, num_samples)) goto out;
+    if (plf_init(&tmp1, max_num_sites)) goto out;
+    if (plf_init(&tmp2, max_num_sites)) goto out;
 
     SEXP node_weight = PROTECT(Rf_allocVector(REALSXP, num_nodes));
     SEXP tree_length = PROTECT(Rf_allocVector(REALSXP, num_trees));

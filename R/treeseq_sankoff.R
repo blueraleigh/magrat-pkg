@@ -205,12 +205,16 @@ treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
     sample_ids = sample_locations[, "node_id"] + 1L
     x[sample_ids] = sample_locations[,"x"]
     y[sample_ids] = sample_locations[,"y"]
+    nx = length(unique(sample_locations[,"x"]))
+    ny = length(unique(sample_locations[,"y"]))
     L = .Call(
         C_treeseq_linear_mpr
         , ts@treeseq
         , as.integer(use_brlen)
         , x
         , y
+        , nx
+        , ny
     )
     names(L) = c("mean_tree_length", "tree_length", "mpr_x", "mpr_y")
     structure(L, class=c("linear", "mpr"))
