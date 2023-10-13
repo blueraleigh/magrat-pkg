@@ -26,7 +26,7 @@ treeseq_island_mpr = function(ts, sample_locations, cost,
         , num_states
         , G
         , cost
-    ), names=c("mean_tree_length", "tree_length", "G", "F"))
+    ), names=c("mean_tree_length", "tree_length", "mpr"))
 }
 
 
