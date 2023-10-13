@@ -26,6 +26,7 @@ SEXP C_treeseq_nodes(SEXP);
 SEXP C_treeseq_edges(SEXP);
 SEXP C_treeseq_individuals(SEXP);
 SEXP C_treeseq_intervals(SEXP);
+SEXP C_treeseq_populations(SEXP);
 
 SEXP C_treeseq_lattice_mpr(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
 SEXP C_treeseq_island_mpr(SEXP,SEXP,SEXP,SEXP,SEXP);
@@ -48,6 +49,7 @@ static const R_CallMethodDef CallEntries[] = {
     CALLDEF(C_treeseq_edges, 1),
     CALLDEF(C_treeseq_individuals, 1),
     CALLDEF(C_treeseq_intervals, 1),
+    CALLDEF(C_treeseq_populations, 1),
 
     CALLDEF(C_treeseq_lattice_mpr, 8),
     CALLDEF(C_treeseq_island_mpr, 5),
