@@ -1,5 +1,6 @@
 #include <R.h>
 #include <Rinternals.h>
+#include <Rmath.h>
 #include <assert.h>
 #include <tskit.h>
 
@@ -309,12 +310,10 @@ SEXP C_treeseq_quadratic_mpr_minimize(SEXP F)
 }
 
 
-SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP lo, SEXP hi)
+SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP rate)
 {
     int i;
     int sign;
-    int lb[2];
-    int ub[2];
     int nr = *INTEGER(Rf_getAttrib(F, R_DimSymbol));
 
     SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, nr, 2));
@@ -327,10 +326,12 @@ SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP lo, SEXP hi)
     double *y = REAL(ans) + nr;
     const double *restrict p = REAL(F);
 
-    double lower[2] = {*REAL(lo), REAL(lo)[1]};
-    double upper[2] = {*REAL(hi), REAL(hi)[1]};
+    double lambda = *REAL(rate);
 
-    double u;
+    double r;
+    double phi;
+    double cosphi;
+    double sinphi;
     double xp;
     double yp;
     double min_x;
@@ -338,6 +339,8 @@ SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP lo, SEXP hi)
     double min_score;
     double score;
     double step;
+    double step_x;
+    double step_y;
     GetRNGstate();
     for (i = 0; i < nr; ++i)
     {
@@ -350,52 +353,47 @@ SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP lo, SEXP hi)
         yp = min_y;
         step = 1;
         sign = +1;
+
+        r = -log(1 - unif_rand()) / lambda; // rexp(lambda)
+        
+        phi = unif_rand() * M_2PI;
+        cosphi = cos(phi);
+        sinphi = sin(phi);
+        step_x = cosphi;
+        step_y = sinphi;
+
         // we want to sample from exp(-(score - min_score)). i.e., from
         // a rate 1 exponential distribution. starting from the minimum,
         // search along a line until (score - min_score) ≈ 5, which is the
         // distance that will include about 99 percent of the exponential 
         // distribution.
         do {
-            xp += sign*step;
-            yp += sign*step;
+            xp += sign*step_x;
+            yp += sign*step_y;
             score = p[i+0*nr]*xp*xp + 
                     p[i+1*nr]*yp*yp + 
                     p[i+2*nr]*xp + 
                     p[i+3*nr]*yp + 
                     p[i+4*nr];
-            if ((score - min_score) > 5)
+            if ((score - min_score) > r)
             {
                 sign = -1;
                 step /= 2;
+                step_x = step * cosphi;
+                step_y = step * sinphi;
             }
-            else if ((score - min_score) < 5)
+            else if ((score - min_score) < r)
             {
                 sign = +1;
                 step *= 2;
+                step_x = step * cosphi;
+                step_y = step * sinphi;
             }
-        } while (fabs((score - min_score) - 5) > 0.01);
-        // set the bounding box for rejection sampling
-        lb[0] = min_x - fabs(xp - min_x);
-        lb[0] = lower[0] > lb[0] ? lower[0] : lb[0];
-        lb[1] = min_y - fabs(yp - min_y);
-        lb[1] = lower[1] > lb[1] ? lower[1] : lb[1];
-        ub[0] = min_x + fabs(xp - min_x);
-        ub[0] = upper[0] < ub[0] ? upper[0] : ub[0];
-        ub[1] = min_y + fabs(yp - min_y);
-        ub[1] = upper[1] < ub[1] ? upper[1] : ub[1];
-        // rejection sampling
-        do {
-            u = unif_rand();
-            xp = unif_rand() * (ub[0] - lb[0]) + lb[0];
-            yp = unif_rand() * (ub[1] - lb[1]) + lb[1];
-            score = p[i+0*nr]*xp*xp + 
-                    p[i+1*nr]*yp*yp + 
-                    p[i+2*nr]*xp + 
-                    p[i+3*nr]*yp + 
-                    p[i+4*nr];
-            x[i] = xp;
-            y[i] = yp;
-        } while (u >= exp(-score + min_score));
+        } while (fabs((score - min_score) - r) > 1e-8);
+
+        x[i] = xp;
+        y[i] = yp;
+
     }
     PutRNGstate();
     Rf_setAttrib(ans, R_DimNamesSymbol, dimnames);

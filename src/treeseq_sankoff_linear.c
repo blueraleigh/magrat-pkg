@@ -653,9 +653,8 @@ SEXP C_treeseq_linear_mpr_minimize(SEXP Fx, SEXP Fy)
         a = REAL(VECTOR_ELT(VECTOR_ELT(Fx, i), 1));
         b = REAL(VECTOR_ELT(VECTOR_ELT(Fx, i), 2));
         j = 0;
-        do {
+        while (a[j+1] < 0)
             ++j;
-        } while (a[j+1] < 0);
         x[i] = b[j];
         k = 1;
         while (a[j+1] == 0)
@@ -668,9 +667,8 @@ SEXP C_treeseq_linear_mpr_minimize(SEXP Fx, SEXP Fy)
         a = REAL(VECTOR_ELT(VECTOR_ELT(Fy, i), 1));
         b = REAL(VECTOR_ELT(VECTOR_ELT(Fy, i), 2));
         j = 0;
-        do {
+        while (a[j+1] < 0)
             ++j;
-        } while (a[j+1] < 0);
         y[i] = b[j];
         k = 1;
         while (a[j+1] == 0)
@@ -712,29 +710,26 @@ compute_score(double x, double intercept, double *slope, double *breakpoint,
 }
 
 
-SEXP C_treeseq_linear_mpr_sample(SEXP Fx, SEXP Fy, SEXP lo, SEXP hi)
+SEXP C_treeseq_linear_mpr_sample(SEXP Fx, SEXP Fy, SEXP rate)
 {
     int i;
     int j;
     int sign;
-    int lb[2];
-    int ub[2];
+    int search_left;
     int n = Rf_length(Fx);
     SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
     double *x = REAL(ans);
     double *y = REAL(ans) + n;
 
-    double lower[2] = {*REAL(lo), REAL(lo)[1]};
-    double upper[2] = {*REAL(hi), REAL(hi)[1]};
+    double lambda = *REAL(rate);
 
-    double u;
+    double r;
     double xp;
     double yp;
     double min_x;
     double min_y;
     double min_score_x;
     double min_score_y;
-    double min_score;
     double score;
     double step;
 
@@ -760,109 +755,91 @@ SEXP C_treeseq_linear_mpr_sample(SEXP Fx, SEXP Fy, SEXP lo, SEXP hi)
         by = REAL(VECTOR_ELT(VECTOR_ELT(Fy, i), 2));
         ny = Rf_length(VECTOR_ELT(VECTOR_ELT(Fy, i), 2));
 
+
+        r = -log(1 - unif_rand()) / lambda; // rexp(lambda)
+        sign = unif_rand() < 0.5 ? -1 : +1;
+        search_left = sign == +1 ? 0 : 1;
+        step = 1;
+
         j = 0;
         score = ix + ax[0]*bx[0];
-        do {
+        while (ax[j+1] < 0)
+        {
             ++j;
             score += ax[j] * (bx[j] - bx[j-1]);
-        } while (ax[j+1] < 0);
+        }
+
+        if (!search_left)
+        {
+            // go to the rightmost minimum
+            while (ax[j+1] == 0)
+                ++j;
+        }
+
         min_x = bx[j];
         min_score_x = score;
+        
+        xp = min_x;
+
+        do {
+            xp += sign*step;
+            score = compute_score(xp, ix, ax, bx, nx);
+            if ((score - min_score_x) > r)
+            {
+                sign = search_left ? +1 : -1;
+                step /= 2;
+            }
+            else if ((score - min_score_x) < r)
+            {
+                sign = search_left ? -1 : +1;
+                step *= 2;
+            }
+        } while (fabs((score - min_score_x) - r) > 1e-6);
+
+
+        r = -log(1 - unif_rand()) / lambda;
+        sign = unif_rand() < 0.5 ? -1 : +1;
+        search_left = sign == +1 ? 0 : 1;
+        step = 1;
+
         j = 0;
         score = iy + ay[0]*by[0];
-        do {
+        while (ay[j+1] < 0)
+        {
             ++j;
             score += ay[j] * (by[j] - by[j-1]);
-        } while (ay[j+1] < 0);
+        }
+
+        if (!search_left)
+        {
+            // go to the rightmost minimum
+            while (ay[j+1] == 0)
+                ++j;
+        }
+
         min_y = by[j];
         min_score_y = score;
-        min_score = min_score_x + min_score_y;
-        xp = min_x;
-        step = 1;
-        sign = -1;
-        do {
-            xp += sign*step;
-            score = compute_score(xp, ix, ax, bx, nx);
-            if ((score - min_score_x) > 5)
-            {
-                sign = +1;
-                step /= 2;
-            }
-            else if ((score - min_score_x) < 5)
-            {
-                sign = -1;
-                step *= 2;
-            }
-        } while (fabs((score - min_score_x) - 5) > 0.01);
-        lb[0] = min_x - fabs(xp - min_x);
-        lb[0] = lower[0] > lb[0] ? lower[0] : lb[0];
-        xp = min_x;
-        step = 1;
-        sign = +1;
-        do {
-            xp += sign*step;
-            score = compute_score(xp, ix, ax, bx, nx);
-            if ((score - min_score_x) > 5)
-            {
-                sign = -1;
-                step /= 2;
-            }
-            else if ((score - min_score_x) < 5)
-            {
-                sign = +1;
-                step *= 2;
-            }
-        } while (fabs((score - min_score_x) - 5) > 0.01);
-        ub[0] = min_x + fabs(xp - min_x);
-        ub[0] = upper[0] < ub[0] ? upper[0] : ub[0];
+
         yp = min_y;
-        step = 1;
-        sign = -1;
+
         do {
             yp += sign*step;
             score = compute_score(yp, iy, ay, by, ny);
-            if ((score - min_score_y) > 5)
+            if ((score - min_score_y) > r)
             {
-                sign = +1;
+                sign = search_left ? +1 : -1;
                 step /= 2;
             }
-            else if ((score - min_score_y) < 5)
+            else if ((score - min_score_y) < r)
             {
-                sign = -1;
+                sign = search_left ? -1 : +1;
                 step *= 2;
             }
-        } while (fabs((score - min_score_y) - 5) > 0.01);
-        lb[1] = min_y - fabs(yp - min_y);
-        lb[1] = lower[1] > lb[1] ? lower[1] : lb[1];
-        yp = min_y;
-        step = 1;
-        sign = +1;
-        do {
-            yp += sign*step;
-            score = compute_score(yp, iy, ay, by, ny);
-            if ((score - min_score_y) > 5)
-            {
-                sign = -1;
-                step /= 2;
-            }
-            else if ((score - min_score_y) < 5)
-            {
-                sign = +1;
-                step *= 2;
-            }
-        } while (fabs((score - min_score_y) - 5) > 0.01);
-        ub[1] = min_y + fabs(yp - min_y);
-        ub[1] = upper[1] < ub[1] ? upper[1] : ub[1];
-        // rejection sampling
-        do {
-            u = unif_rand();
-            xp = unif_rand() * (ub[0] - lb[0]) + lb[0];
-            yp = unif_rand() * (ub[1] - lb[1]) + lb[1];
-            score = compute_score(xp, ix, ax, bx, nx) +
-                    compute_score(yp, iy, ay, by, ny);
-            x[i] = xp;
-            y[i] = yp;
-        } while (u >= exp(-score + min_score));
+        } while (fabs((score - min_score_y) - r) > 1e-6);
+
+        x[i] = xp;
+        y[i] = yp;
+
     }
     PutRNGstate();
     UNPROTECT(1);

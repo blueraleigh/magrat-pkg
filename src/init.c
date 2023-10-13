@@ -32,10 +32,10 @@ SEXP C_treeseq_island_mpr(SEXP,SEXP,SEXP,SEXP,SEXP);
 SEXP C_treeseq_island_mpr_sample(SEXP,SEXP,SEXP,SEXP,SEXP);
 SEXP C_treeseq_quadratic_mpr(SEXP,SEXP,SEXP,SEXP);
 SEXP C_treeseq_quadratic_mpr_minimize(SEXP);
-SEXP C_treeseq_quadratic_mpr_sample(SEXP,SEXP,SEXP);
+SEXP C_treeseq_quadratic_mpr_sample(SEXP,SEXP);
 SEXP C_treeseq_linear_mpr(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
 SEXP C_treeseq_linear_mpr_minimize(SEXP,SEXP);
-SEXP C_treeseq_linear_mpr_sample(SEXP,SEXP,SEXP,SEXP);
+SEXP C_treeseq_linear_mpr_sample(SEXP,SEXP,SEXP);
 
 SEXP C_treeseq_tmrca(SEXP);
 
@@ -54,10 +54,10 @@ static const R_CallMethodDef CallEntries[] = {
     CALLDEF(C_treeseq_island_mpr_sample, 5),
     CALLDEF(C_treeseq_quadratic_mpr, 4),
     CALLDEF(C_treeseq_quadratic_mpr_minimize, 1),
-    CALLDEF(C_treeseq_quadratic_mpr_sample, 3),
+    CALLDEF(C_treeseq_quadratic_mpr_sample, 2),
     CALLDEF(C_treeseq_linear_mpr, 6),
     CALLDEF(C_treeseq_linear_mpr_minimize, 2),
-    CALLDEF(C_treeseq_linear_mpr_sample, 4),
+    CALLDEF(C_treeseq_linear_mpr_sample, 3),
 
     CALLDEF(C_treeseq_tmrca, 1),
 

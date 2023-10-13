@@ -171,23 +171,12 @@ treeseq_quadratic_mpr_minimize = function(obj)
     .Call(C_treeseq_quadratic_mpr_minimize, obj$mpr)
 }
 
-treeseq_quadratic_mpr_sample = function(obj, lower, upper)
+treeseq_quadratic_mpr_sample = function(obj, rate)
 {
     stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
-    if (missing(lower) || length(lower) == 0)
-        lower = c(-Inf, -Inf)
-    else {
-        if (length(lower) == 1)
-            lower = c(lower, lower)
-    }
-    if (missing(upper) || length(upper) == 0)
-        upper = c(Inf, Inf)
-    else {
-        if (length(upper) == 1)
-            upper = c(upper, upper)
-    }
-    stopifnot(all(lower < upper))
-    .Call(C_treeseq_quadratic_mpr_sample, obj$mpr, lower, upper)
+    if (missing(rate))
+        rate = 1
+    .Call(C_treeseq_quadratic_mpr_sample, obj$mpr, rate)
 }
 
 
@@ -228,21 +217,10 @@ treeseq_linear_mpr_minimize = function(obj)
 }
 
 
-treeseq_linear_mpr_sample = function(obj, lower, upper)
+treeseq_linear_mpr_sample = function(obj, rate)
 {
     stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
-    if (missing(lower) || length(lower) == 0)
-        lower = c(-Inf, -Inf)
-    else {
-        if (length(lower) == 1)
-            lower = c(lower, lower)
-    }
-    if (missing(upper) || length(upper) == 0)
-        upper = c(Inf, Inf)
-    else {
-        if (length(upper) == 1)
-            upper = c(upper, upper)
-    }
-    stopifnot(all(lower < upper))
-    .Call(C_treeseq_linear_mpr_sample, obj$mpr_x, obj$mpr_y, lower, upper)
+    if (missing(rate))
+        rate = 1
+    .Call(C_treeseq_linear_mpr_sample, obj$mpr_x, obj$mpr_y, rate)
 }
