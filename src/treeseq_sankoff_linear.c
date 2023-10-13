@@ -845,3 +845,173 @@ SEXP C_treeseq_linear_mpr_sample(SEXP Fx, SEXP Fy, SEXP rate)
     UNPROTECT(1);
     return ans;
 }
+
+
+// eastings and northings define the raster grid, the raster itself
+// is stored as a sparse matrix with 1's for occupiable cells and
+// implicit 0's for unoccupiable cells
+SEXP C_treeseq_linear_mpr_minimize_discrete(
+    SEXP Fx, SEXP Fy, SEXP eastings, SEXP northings, SEXP raster)
+{
+    int i;
+    int j;
+    int k;
+    int l;
+    int n = Rf_length(Fx);
+    
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
+    double *x = REAL(ans);
+    double *y = REAL(ans) + n;
+
+    int start;
+    int stop;
+    int *ri = INTEGER(R_do_slot(raster, Rf_mkString("i")));
+    int *rj = INTEGER(R_do_slot(raster, Rf_mkString("p")));
+
+    int nx;
+    int ny;
+    double ix;
+    double iy;
+    double *restrict ax;
+    double *restrict bx;
+    double *restrict ay;
+    double *restrict by;
+
+    int ncol = Rf_length(eastings);
+
+    double score;
+    double min_score;
+    double min_x;
+    double min_y;
+
+    double *easting = REAL(eastings);
+    double *northing = REAL(northings);
+
+    for (l = 0; l < n; ++l)
+    {
+        ix = *REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 0));
+        ax = REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 1));
+        bx = REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 2));
+        nx = Rf_length(VECTOR_ELT(VECTOR_ELT(Fx, l), 2));
+
+        iy = *REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 0));
+        ay = REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 1));
+        by = REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 2));
+        ny = Rf_length(VECTOR_ELT(VECTOR_ELT(Fy, l), 2));
+
+        min_score = R_PosInf;
+
+        // loop over columns
+        for (j = 0; j < ncol; ++j)
+        {
+            start = rj[j];
+            stop = start + rj[j+1] - rj[j];
+            for (k = start; k < stop; ++k)
+            {
+                i = ri[k];
+                
+                // compute the score for (i,j) cell
+                score = compute_score(easting[j], ix, ax, bx, nx) +
+                        compute_score(northing[i], iy, ay, by, ny);
+                if (score < min_score)
+                {
+                    min_x = easting[j];
+                    min_y = northing[i];
+                    min_score = score;
+                }
+            }
+        }
+        x[l] = min_x;
+        y[l] = min_y;
+    }
+
+    UNPROTECT(1);
+    return ans;
+}
+
+
+SEXP C_treeseq_linear_mpr_sample_discrete(
+    SEXP Fx, SEXP Fy, SEXP eastings, SEXP northings, SEXP raster)
+{
+    int i;
+    int j;
+    int k;
+    int l;
+    int n = Rf_length(Fx);
+    
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
+    double *x = REAL(ans);
+    double *y = REAL(ans) + n;
+
+    int start;
+    int stop;
+    int *ri = INTEGER(R_do_slot(raster, Rf_mkString("i")));
+    int *rj = INTEGER(R_do_slot(raster, Rf_mkString("p")));
+
+    int nx;
+    int ny;
+    double ix;
+    double iy;
+    double *restrict ax;
+    double *restrict bx;
+    double *restrict ay;
+    double *restrict by;
+
+    int ncol = Rf_length(eastings);
+
+    double score;
+    double max_score;
+    double min_x;
+    double min_y;
+
+    double gumbel;
+
+    double *easting = REAL(eastings);
+    double *northing = REAL(northings);
+
+    GetRNGstate();
+    for (l = 0; l < n; ++l)
+    {
+        ix = *REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 0));
+        ax = REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 1));
+        bx = REAL(VECTOR_ELT(VECTOR_ELT(Fx, l), 2));
+        nx = Rf_length(VECTOR_ELT(VECTOR_ELT(Fx, l), 2));
+
+        iy = *REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 0));
+        ay = REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 1));
+        by = REAL(VECTOR_ELT(VECTOR_ELT(Fy, l), 2));
+        ny = Rf_length(VECTOR_ELT(VECTOR_ELT(Fy, l), 2));
+
+        max_score = R_NegInf;
+
+        // loop over columns
+        for (j = 0; j < ncol; ++j)
+        {
+            start = rj[j];
+            stop = start + rj[j+1] - rj[j];
+            for (k = start; k < stop; ++k)
+            {
+                i = ri[k];
+                
+                // compute the score for (i,j) cell
+                score = compute_score(easting[j], ix, ax, bx, nx) +
+                        compute_score(northing[i], iy, ay, by, ny);
+                
+                gumbel = -log(-log(unif_rand()));
+                
+                if ((gumbel - score) > max_score)
+                {
+                    min_x = easting[j];
+                    min_y = northing[i];
+                    max_score = gumbel - score;
+                }
+            }
+        }
+        x[l] = min_x;
+        y[l] = min_y;
+    }
+    PutRNGstate();
+
+    UNPROTECT(1);
+    return ans;
+}

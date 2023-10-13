@@ -400,3 +400,142 @@ SEXP C_treeseq_quadratic_mpr_sample(SEXP F, SEXP rate)
     UNPROTECT(2);
     return ans;
 }
+
+
+SEXP C_treeseq_quadratic_mpr_minimize_discrete(
+    SEXP F, SEXP eastings, SEXP northings, SEXP raster)
+{
+    int i;
+    int j;
+    int k;
+    int l;
+    int n = *INTEGER(Rf_getAttrib(F, R_DimSymbol));
+    
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
+    double *x = REAL(ans);
+    double *y = REAL(ans) + n;
+
+    int start;
+    int stop;
+    int *ri = INTEGER(R_do_slot(raster, Rf_mkString("i")));
+    int *rj = INTEGER(R_do_slot(raster, Rf_mkString("p")));
+
+    const double *restrict p = REAL(F);
+
+    int ncol = Rf_length(eastings);
+
+    double score;
+    double min_score;
+    double min_x;
+    double min_y;
+
+    double *easting = REAL(eastings);
+    double *northing = REAL(northings);
+
+    for (l = 0; l < n; ++l)
+    {
+        min_score = R_PosInf;
+
+        // loop over columns
+        for (j = 0; j < ncol; ++j)
+        {
+            start = rj[j];
+            stop = start + rj[j+1] - rj[j];
+            for (k = start; k < stop; ++k)
+            {
+                i = ri[k];
+                
+                // compute the score for (i,j) cell
+                score = p[l+0*n]*easting[j]*easting[j] + 
+                    p[l+1*n]*northing[i]*northing[i] + 
+                    p[l+2*n]*easting[j] + 
+                    p[l+3*n]*northing[i] + 
+                    p[l+4*n];
+
+                if (score < min_score)
+                {
+                    min_x = easting[j];
+                    min_y = northing[i];
+                    min_score = score;
+                }
+            }
+        }
+        x[l] = min_x;
+        y[l] = min_y;
+    }
+
+    UNPROTECT(1);
+    return ans;
+}
+
+
+SEXP C_treeseq_quadratic_mpr_sample_discrete(
+    SEXP F, SEXP eastings, SEXP northings, SEXP raster)
+{
+    int i;
+    int j;
+    int k;
+    int l;
+    int n = *INTEGER(Rf_getAttrib(F, R_DimSymbol));
+    
+    SEXP ans = PROTECT(Rf_allocMatrix(REALSXP, n, 2));
+    double *x = REAL(ans);
+    double *y = REAL(ans) + n;
+
+    int start;
+    int stop;
+    int *ri = INTEGER(R_do_slot(raster, Rf_mkString("i")));
+    int *rj = INTEGER(R_do_slot(raster, Rf_mkString("p")));
+
+    const double *restrict p = REAL(F);
+
+    int ncol = Rf_length(eastings);
+
+    double score;
+    double max_score;
+    double gumbel;
+    double min_x;
+    double min_y;
+
+    double *easting = REAL(eastings);
+    double *northing = REAL(northings);
+
+    GetRNGstate();
+    for (l = 0; l < n; ++l)
+    {
+        max_score = R_NegInf;
+
+        // loop over columns
+        for (j = 0; j < ncol; ++j)
+        {
+            start = rj[j];
+            stop = start + rj[j+1] - rj[j];
+            for (k = start; k < stop; ++k)
+            {
+                i = ri[k];
+                
+                gumbel = -log(-log(unif_rand()));
+                
+                // compute the score for (i,j) cell
+                score = p[l+0*n]*easting[j]*easting[j] + 
+                    p[l+1*n]*northing[i]*northing[i] + 
+                    p[l+2*n]*easting[j] + 
+                    p[l+3*n]*northing[i] + 
+                    p[l+4*n];
+
+                if ((gumbel - score) > max_score)
+                {
+                    min_x = easting[j];
+                    min_y = northing[i];
+                    max_score = gumbel - score;
+                }
+            }
+        }
+        x[l] = min_x;
+        y[l] = min_y;
+    }
+    PutRNGstate();
+
+    UNPROTECT(1);
+    return ans;
+}

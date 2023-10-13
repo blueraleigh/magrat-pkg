@@ -179,6 +179,35 @@ treeseq_quadratic_mpr_sample = function(obj, rate)
     .Call(C_treeseq_quadratic_mpr_sample, obj$mpr, rate)
 }
 
+treeseq_quadratic_mpr_minimize_discrete = function(
+    obj, eastings, northings, raster)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    stopifnot(inherits(raster, "dgCMatrix"))
+    stopifnot(nrow(raster) == length(northings))
+    stopifnot(ncol(raster) == length(eastings))
+    .Call(
+        C_treeseq_quadratic_mpr_minimize_discrete
+        , obj$mpr
+        , eastings
+        , northings
+        , raster)
+}
+
+treeseq_quadratic_mpr_sample_discrete = function(
+    obj, eastings, northings, raster)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    stopifnot(inherits(raster, "dgCMatrix"))
+    stopifnot(nrow(raster) == length(northings))
+    stopifnot(ncol(raster) == length(eastings))
+    .Call(
+        C_treeseq_quadratic_mpr_sample_discrete
+        , obj$mpr
+        , eastings
+        , northings
+        , raster)
+}
 
 treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
 {
@@ -223,4 +252,38 @@ treeseq_linear_mpr_sample = function(obj, rate)
     if (missing(rate))
         rate = 1
     .Call(C_treeseq_linear_mpr_sample, obj$mpr_x, obj$mpr_y, rate)
+}
+
+
+treeseq_linear_mpr_minimize_discrete = function(
+    obj, eastings, northings, raster)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    stopifnot(inherits(raster, "dgCMatrix"))
+    stopifnot(nrow(raster) == length(northings))
+    stopifnot(ncol(raster) == length(eastings))
+    .Call(
+        C_treeseq_linear_mpr_minimize_discrete
+        , obj$mpr_x
+        , obj$mpr_y
+        , eastings
+        , northings
+        , raster)
+}
+
+
+treeseq_linear_mpr_sample_discrete = function(
+    obj, eastings, northings, raster)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    stopifnot(inherits(raster, "dgCMatrix"))
+    stopifnot(nrow(raster) == length(northings))
+    stopifnot(ncol(raster) == length(eastings))
+    .Call(
+        C_treeseq_linear_mpr_sample_discrete
+        , obj$mpr_x
+        , obj$mpr_y
+        , eastings
+        , northings
+        , raster)
 }
