@@ -209,6 +209,49 @@ treeseq_quadratic_mpr_sample_discrete = function(
         , raster)
 }
 
+treeseq_quadratic_nd_mpr = function(ts, sample_locations, use_brlen=FALSE)
+{
+    stopifnot(inherits(ts, "treeseq"))
+    stopifnot(is.matrix(sample_locations))
+    stopifnot(!is.null(colnames(sample_locations)))
+    stopifnot(colnames(sample_locations)[1] == "node_id")
+    storage.mode(sample_locations) = "double"
+    N = nrow(treeseq_nodes(ts))
+    num_samples = nrow(sample_locations)
+    x = matrix(0, ncol(sample_locations)-1L, N)
+    sample_ids = sample_locations[, 1] + 1L
+    for (i in 1:num_samples)
+    {
+        sample_id = sample_locations[i, 1]
+        x[, sample_id+1L] = sample_locations[i, -1]
+    }
+    L = .Call(
+        C_treeseq_quadratic_nd_mpr
+        , ts@treeseq
+        , as.integer(use_brlen)
+        , x
+    )
+    names(L) = c("mean_tree_length", "tree_length", "mpr")
+    L[[3]] = t(L[[3]][, -sample_ids])
+    rownames(L[[3]]) = (0:(N-1))[-sample_ids]
+    structure(L, class=c("quadratic", "mpr"))
+}
+
+treeseq_quadratic_nd_mpr_minimize = function(obj)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    .Call(C_treeseq_quadratic_nd_mpr_minimize, obj$mpr)
+}
+
+treeseq_quadratic_nd_mpr_minimize_discrete = function(obj, sites)
+{
+    stopifnot(inherits(obj, "quadratic") && inherits(obj, "mpr"))
+    .Call(
+        C_treeseq_quadratic_nd_mpr_minimize_discrete
+        , obj$mpr
+        , sites)
+}
+
 treeseq_linear_mpr = function(ts, sample_locations, use_brlen=FALSE)
 {
     stopifnot(inherits(ts, "treeseq"))
@@ -286,4 +329,51 @@ treeseq_linear_mpr_sample_discrete = function(
         , eastings
         , northings
         , raster)
+}
+
+
+
+treeseq_linear_nd_mpr = function(ts, sample_locations, use_brlen=FALSE)
+{
+    stopifnot(inherits(ts, "treeseq"))
+    stopifnot(is.matrix(sample_locations))
+    stopifnot(!is.null(colnames(sample_locations)))
+    stopifnot(colnames(sample_locations)[1] == "node_id")
+    storage.mode(sample_locations) = "double"
+    N = nrow(treeseq_nodes(ts))
+    num_samples = nrow(sample_locations)
+    x = matrix(0, ncol(sample_locations)-1L, N)
+    sample_ids = sample_locations[, "node_id"] + 1L
+    for (i in 1:num_samples)
+    {
+        sample_id = sample_locations[i, 1]
+        x[, sample_id+1L] = sample_locations[i, -1]
+    }
+    nx = apply(sample_locations[,-1], 2, function(s) length(unique(s)))
+    L = .Call(
+        C_treeseq_linear_nd_mpr
+        , ts@treeseq
+        , as.integer(use_brlen)
+        , x
+        , nx
+    )
+    names(L) = c("mean_tree_length", "tree_length", "mpr")
+    structure(L, class=c("linear", "mpr"))
+}
+
+
+treeseq_linear_nd_mpr_minimize = function(obj)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    .Call(C_treeseq_linear_nd_mpr_minimize, obj$mpr)
+}
+
+
+treeseq_linear_nd_mpr_minimize_discrete = function(obj, sites)
+{
+    stopifnot(inherits(obj, "linear") && inherits(obj, "mpr"))
+    .Call(
+        C_treeseq_linear_nd_mpr_minimize_discrete
+        , obj$mpr
+        , sites)
 }
